@@ -1,0 +1,6 @@
+makefile
+output.txt
+simpleshell
+simpleshell.c
+simpleshell.exe
+text.txt
