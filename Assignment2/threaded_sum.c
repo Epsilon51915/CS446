@@ -53,11 +53,11 @@ int main(int argc, char* argv[])
     //printf("Check for time \n");
     struct timeval time1, time2;
     gettimeofday(&time1, NULL);
-    printf("Time 1 %ld\n", time1.tv_sec);
+    //printf("Time 1 %ld\n", time1.tv_sec);
 
-    pthread_mutex_t *ptmt = malloc(sizeof(pthread_mutex_t));
+    pthread_mutex_t ptmt;
     //printf("Create\n");
-    pthread_mutex_init(ptmt, NULL);
+    pthread_mutex_init(&ptmt, NULL);
     //printf("Mutex init\n");
     
 
@@ -70,7 +70,7 @@ int main(int argc, char* argv[])
         thread_data[i].data = nums;
         thread_data[i].startInd = splits*i; 
         thread_data[i].endInd = splits*(1+i);
-        thread_data[i].lock = ptmt;
+        thread_data[i].lock = &ptmt;
         thread_data[i].totalSum = &totalSum;
     }
     thread_data[threadNum - 1].endInd = retVal;
@@ -79,16 +79,19 @@ int main(int argc, char* argv[])
     pthread_t thread[threadNum];
     for(int i = 0; i < threadNum; i++)
     {
+        //printf("Thread %d\n", i+1);
+        pthread_mutex_unlock(&ptmt);
         //printf("Pre-thread loop\n");
         pthread_create(&thread[i], NULL, arraysum, &thread_data[i]);
         pthread_join(thread[i], NULL);
+        pthread_mutex_lock(&ptmt);
     }
     //printf("Out\n");
     
     gettimeofday(&time2, NULL);
 
-    printf("Time 2 %ld\n", time2.tv_sec);
-    double final = (time2.tv_sec - time1.tv_sec) * 1000;
+    //printf("Time 2 %ld\n", time2.tv_sec);
+    double final = (time2.tv_usec - time1.tv_usec) / 1000;
     //printf("LIF\n");
     printf("Final time: %f\n", final);
     printf("Final sum: %lld\n", totalSum);

@@ -1,0 +1,6 @@
+Questions:
+a. With more threads, the program runs slower, since each thread is called in series with each other.
+b. it seems strange, since the threads shold, ideally, be running in paralell, each computing their sum at the same time and then 
+incrementing the total sum, meaning more threads should speed up the process, not slow it down.
+c. My critical section was right before each thread was created and arraysum was called, since this is where the threads access the shared
+totalSum variable and integer array variable.
