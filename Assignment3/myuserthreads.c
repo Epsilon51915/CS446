@@ -15,26 +15,23 @@
 #include "modify_value.h"
 
 #define REPS 100000
-//#define STACK_SIZE sysconf(_SC_SIGSTKSZ)
-#define STACK_SIZE 8192
-
+#define STACK_SIZE sysconf(_SC_SIGSTKSZ)
 
 int counter = 0;
-
 int task_1_finished = 0;
 int task_2_finished = 0;
 struct ucontext_t main_context;
 struct ucontext_t task1_context;
 struct ucontext_t task2_context;
+int active_context = 0;
+atomic_flag flag = ATOMIC_FLAG_INIT;
 
 void task_1_func() {
     printf("Task 1 started.\n");
 
     for (int i=0; i<REPS; ++i) {
-		
-
         // implement spin-guard lock()-ing //
-
+        //while(atomic_flag_test_and_set(&flag));
 
         while (rand() % 8 != 0) {}  // short, random delay to prevent loop unrolling
 
@@ -44,22 +41,21 @@ void task_1_func() {
 
 
         // implement spin-guard unlock()-ing //
-
+        //atomic_flag_clear(&flag);
 
     }
     
     printf("Task 1 finished.\n");
     task_1_finished = 1;
+    return;
 }
 
 void task_2_func() {
     printf("Task 2 started.\n");
 
     for (int i=0; i<REPS; ++i) {
-		
-        //printf("2i: %d", i);
         // implement spin-guard lock()-ing //
-
+        //while(atomic_flag_test_and_set(&flag));
 
         while (rand() % 8 != 0) {}  // short, random delay to prevent loop unrolling
 
@@ -69,10 +65,12 @@ void task_2_func() {
 
 
         // implement spin-guard unlock()-ing //
+        //atomic_flag_clear(&flag);
     }
     
     printf("Task 2 finished.\n");
     task_2_finished = 1;
+    return;
 }
 
 
@@ -81,33 +79,46 @@ void time_slice_expired_handler(int signal) {
     printf("\t\tTIME SLICE EXPIRED\n");
 
     // implement simple scheduling between tasks //
-
-    struct ucontext_t current_context;
-    getcontext(&current_context);
-
+    //printf("Check:");
     if(task_1_finished == 1 && task_2_finished == 1)
     {
+        //printf("Both done");
         setcontext(&main_context);
+        return;
     }
-    if(task_1_finished == 1)
+    else if(task_1_finished == 1 && active_context == 1)
     {
-        printf("T1 done");
-        swapcontext(&current_context, &task2_context);
+        //printf("T1 done");
+        active_context = 2;
+        setcontext(&task2_context);
+        //active_context = 1;
+        //swapcontext(&task2_context, &main_context);
+        return;
     }
-    if(task_2_finished == 1)
+    else if(task_2_finished == 1 && active_context == 2)
     {
-        swapcontext(&current_context, &task1_context);
+        //printf("T2 done");
+        active_context = 1;
+        setcontext(&task1_context);
+        //active_context = 2;
+        //swapcontext(&task2_context, &main_context);
+        return;
     }
-    if(&current_context.uc_stack.ss_sp == &task1_context.uc_stack.ss_sp)
+    else if(active_context == 1 && task_1_finished == 0 && task_2_finished == 0)
     {
-        printf("1 to 2");
-        swapcontext(&task1_context, &main_context);
+        //printf("1 to 2");
+        active_context = 2;
+        swapcontext(&task1_context, &task2_context);
+        return;
     }
-    if(&current_context.uc_stack.ss_sp == &task2_context.uc_stack.ss_sp)
+    else if(active_context == 2 && task_1_finished == 0 && task_2_finished == 0)
     {
-        printf("2 to 1");
-        swapcontext(&task2_context, &main_context);
+        //printf("2 to 1");
+        active_context = 1;
+        swapcontext(&task2_context, &task1_context);
+        return;
     }
+    return;
 }
 
 
@@ -116,9 +127,10 @@ int main(int argc, char *argv[]){
     srand(time(NULL));  // initialize random number generator
 
     // implement task1 and task2 ucontext setup //
-    getcontext(&main_context);
     getcontext(&task1_context);
     getcontext(&task2_context);
+    //getcontext(&main_context);
+    
 
     void* stack1 = malloc(STACK_SIZE);
     void* stack2 = malloc(STACK_SIZE);
@@ -156,12 +168,10 @@ int main(int argc, char *argv[]){
     printf("Main started.\n");
 	
     
-    while (!task_1_finished || !task_2_finished) {
+    active_context = 1;
+	swapcontext(&main_context, &task1_context);
+    while (task_1_finished != 1 || task_2_finished != 1) {
         printf("\t\tTasks 1 && 2 not both Finished yet - Waiting...\n");
-		
-		// implement any other task scheduling operations you might need here //
-		swapcontext(&main_context, &task1_context);
-        swapcontext(&main_context, &task2_context);
         pause();  // pause the main Thread, to wait for delivery of the the next timer-based signal 
     }
 	
