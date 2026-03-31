@@ -1,0 +1,29 @@
+Q1: 12 Cores on ECC computers. 
+    Notes: MUCH longer latency times than with fewer cores (which I initially used only 4 on testing.) Likely because 
+    when there are more active threads, the round-robin style switching means that there are more threads that any 
+    given thread must wait for in order to resume operation, creating MUCH larger latencies.
+
+Q2: Pre-Policy switch observations: There are aboout 3 orders of magnitude MORE voluntary ctxt switches than there are nonvoluntary.
+	Commands for Schedule Policy Changing/Priority Switching:
+        1.
+        2.
+        .
+        .
+        .
+    Observations:
+
+Q3: Commands for cpuset/thread moving:
+        1.
+        2.
+        .
+        .
+        .
+    Observations:
+
+Q4: Commands for Schedule Policy Changing/Priority Switching:
+        1.
+        2.
+        .
+        .
+        .
+    Observations:

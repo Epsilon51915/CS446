@@ -20,6 +20,7 @@
 int counter = 0;
 int task_1_finished = 0;
 int task_2_finished = 0;
+
 struct ucontext_t main_context;
 struct ucontext_t task1_context;
 struct ucontext_t task2_context;
@@ -79,41 +80,30 @@ void time_slice_expired_handler(int signal) {
     printf("\t\tTIME SLICE EXPIRED\n");
 
     // implement simple scheduling between tasks //
-    //printf("Check:");
     if(task_1_finished == 1 && task_2_finished == 1)
     {
-        //printf("Both done");
-        setcontext(&main_context);
         return;
     }
     else if(task_1_finished == 1 && active_context == 1)
     {
-        //printf("T1 done");
         active_context = 2;
         setcontext(&task2_context);
-        //active_context = 1;
-        //swapcontext(&task2_context, &main_context);
         return;
     }
     else if(task_2_finished == 1 && active_context == 2)
     {
-        //printf("T2 done");
         active_context = 1;
         setcontext(&task1_context);
-        //active_context = 2;
-        //swapcontext(&task2_context, &main_context);
         return;
     }
     else if(active_context == 1 && task_1_finished == 0 && task_2_finished == 0)
     {
-        //printf("1 to 2");
         active_context = 2;
         swapcontext(&task1_context, &task2_context);
         return;
     }
     else if(active_context == 2 && task_1_finished == 0 && task_2_finished == 0)
     {
-        //printf("2 to 1");
         active_context = 1;
         swapcontext(&task2_context, &task1_context);
         return;
@@ -129,9 +119,7 @@ int main(int argc, char *argv[]){
     // implement task1 and task2 ucontext setup //
     getcontext(&task1_context);
     getcontext(&task2_context);
-    //getcontext(&main_context);
     
-
     void* stack1 = malloc(STACK_SIZE);
     void* stack2 = malloc(STACK_SIZE);
 
